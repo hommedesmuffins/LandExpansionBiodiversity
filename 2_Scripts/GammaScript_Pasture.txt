@@ -1,0 +1,11 @@
+#!/bin/sh
+chmod +x ~/Desktop/GBM_Tests/GammaLog/Gamma_Caribbean_Europe_Pasture.R
+chmod +x ~/Desktop/GBM_Tests/GammaLog/Gamma_MesoAm_NAf_Pasture.R
+chmod +x ~/Desktop/GBM_Tests/GammaLog/Gamma_SSA_Pasture.R
+chmod +x ~/Desktop/GBM_Tests/GammaLog/Gamma_NAm_Pasture.R
+chmod +x ~/Desktop/GBM_Tests/GammaLog/Gamma_NAs_Pasture.R
+chmod +x ~/Desktop/GBM_Tests/GammaLog/Gamma_Oceania_SAs_Pasture.R
+chmod +x ~/Desktop/GBM_Tests/GammaLog/Gamma_SAm_WAs_Pasture.R
+./Desktop/GBM_Tests/GammaLog/Gamma_Caribbean_Europe_Pasture.R & ./Desktop/GBM_Tests/GammaLog/Gamma_MesoAm_NAf_Pasture.R & ./Desktop/GBM_Tests/GammaLog/Gamma_NAm_Pasture.R & ./Desktop/GBM_Tests/GammaLog/Gamma_Oceania_SAs_Pasture.R & ./Desktop/GBM_Tests/GammaLog/Gamma_SAm_WAs_Pasture.R
+./Desktop/GBM_Tests/GammaLog/Gamma_SSA_Pasture.R & ./Desktop/GBM_Tests/GammaLog/Gamma_NAs_Pasture.R
+
