@@ -46,7 +46,6 @@ library(pROC)
 library(gbm)
 library(e1071)
 library(glmnet)
-# library(doMC) # For parallel processing - comment out if not on a Mac
 
 library(EBImage)
 library(countrycode)
@@ -71,23 +70,16 @@ name <- "Mike"
 # name <- "Dave"
 # Load models, functions and data -----
 if(name == "Dave"){
-  source("Scripts/AnalysisScripts/0_Functions_CountryFinescale_16Feb.R")
+  # setwd(....)
+  source("Scripts/AnalysisScripts/0_Functions_CountryFinescale_29April.R")
   # List for GBM outputs
-  file.list.mods_crop <- list.files(pattern = "Crop", path = "Data/FineScaleTests/")
-  file.list.mods_pasture <- list.files(pattern = "Pasture", path = "Data/FineScaleTests/")
+  file.list.mods_crop <- list.files(pattern = "Crop_Coef", path = "Data/Model_Coefficients/")
+  file.list.mods_pasture <- list.files(pattern = "Pasture_Coef", path = "Data/Model_Coefficients/")
+  
   # List for Regional data
-  file.list.data <- list.files(pattern = "GBM", path = "Data/FineScaleTests/")
+  file.list.data <- list.files(pattern = "GBM", path = "Data/Forecast Data Files")
   # List for regional raster names
-  reg.raster.names <- list.files(path = "Data/FineScaleTests/", pattern = "Row")
-  # Urban data
-  load("Data/FineScaleTests/UrbanScenarios_HiRes_working.rda")
-  # Cells to contract (DRW note: not currently doing this)
-  contraction_cells <- read.csv("Data/ModData/FromMC/Prop_Cells_Contract.csv",
-                                header = TRUE,
-                                stringsAsFactors = FALSE)
-  expansion_cells <- read.csv("Data/ModData/FromMC/Prop_Cells_Expand.csv",
-                              header = TRUE,
-                              stringsAsFactors = FALSE)
+  reg.raster.names <- list.files(path = "Data/Region Rasters/Fine_Country/", pattern = "Row")
 } else {
   source("/Users/maclark/Desktop/SSA_Forecast_Runs/0_Functions_CountryFinescale_19March.R")
   # List for GBM outputs
@@ -120,13 +112,13 @@ for(k in c(1:5,9:12,8,7,6)) {
   # Load targets -----
   # At the moment these are created in "1_DataPrep.R" 
   if(name == "Dave"){
-    targets <- read.csv("Data/ModData/Targets_v4.csv",
+    targets <- read.csv("Data/Targets_v4.csv",
                         header = TRUE,
                         stringsAsFactors = FALSE)  
     # Importing regional mod, regional data, calculating change in crop prop by cell to getemulate data set format of data_w_preds_crop, then joining with row.index.frame
     # Loading specific model output
     # First for crops
-    load(paste("Data/FineScaleTests/",
+    load(paste("Data/Model_Coefficients/",
                file.list.mods_crop[k],
                sep = ""))
   } else {
@@ -151,7 +143,7 @@ for(k in c(1:5,9:12,8,7,6)) {
   
   # And repeating for pastures
   if(name == "Dave"){
-    load(paste("Data/FineScaleTests/",
+    load(paste("Data/Model_Coefficients/",
                file.list.mods_pasture[k],
                sep = ""))
   } else {
@@ -169,7 +161,7 @@ for(k in c(1:5,9:12,8,7,6)) {
   
   # Loading specifc regional data set -----
   if(name == "Dave"){
-    region.data <- read.csv(paste("Data/FineScaleTests/",
+    region.data <- read.csv(paste("Data/Forecast Data Files/",
                                   file.list.data[k],
                                   sep = ""),
                             stringsAsFactors = FALSE)
@@ -303,14 +295,15 @@ for(k in c(1:5,9:12,8,7,6)) {
     # Targets 
     # At the moment these are created in "1_DataPrep.R" 
     if(name == "Dave"){
-      targets <- read.csv("Data/ModData/Targets_v4.csv",
+      targets <- read.csv("Data/Targets_v4.csv",
                           header = TRUE,
-                          stringsAsFactors = FALSE)      
+                          stringsAsFactors = FALSE)
       # Getting name of raster to import
-      row.index.name <- list.files(path = "Data/FineScaleTests/",
+      row.index.name <- list.files(path = "Data/Region Rasters/Fine_Country/",
                                    pattern = "Row")
+      row.index.name <- row.index.name[grep(iso3c[c],row.index.name)]
       # Importing country raster with row.index values
-      row.index.raster <- raster(paste("Data/FineScaleTests/",
+      row.index.raster <- raster(paste("Data/Region Rasters/Fine_Country/",
                                        row.index.name,
                                        sep = ""))
     } else {
@@ -429,10 +422,12 @@ for(k in c(1:5,9:12,8,7,6)) {
     
     # Set scenarios to investigate
     unique(targets$scenario)
-    targets <- subset(targets, scenario == "Baseline")
+    # For Dave:    
+    targets <- subset(targets, scenario == "Half_Meat_to_Milk")
+    # targets <- subset(targets, scenario == "Baseline")
     
     # Model runs - DRW keeping this at 1 for the moment
-    N <- N.Iterations
+    # N <- N.Iterations
     # model_runs <- subset(urban_scenarios,
     #                      run <= N)
     # model_runs <- model_runs[,c("run", "ISO3.Numeric", 
@@ -442,7 +437,7 @@ for(k in c(1:5,9:12,8,7,6)) {
     # # Changing names of model_runs ISO3.Numeric to ISO_numeric to match col names in model_data_current
     # names(model_runs)[grep("ISO3.Numeric", names(model_runs))] <- "ISO_numeric"
     
-    rm(N)
+    # rm(N)
     # Get resolution and area data
     # This could probably be moved outside of the loop
     # Leaving here to minimize number of changes to script
@@ -1067,11 +1062,11 @@ for(k in c(1:5,9:12,8,7,6)) {
     } else {
       for(i in 1:length(raster.list.crop)) {
         # Crops
-        png(filename = paste("Outputs/ConversionMaps_Jan/",
+        png(filename = paste("Outputs/LandForecastRuns/Diets/",
                              iso3c[c],
                              region.names[k],
                              names(raster.list.crop)[i], 
-                             "_14Dec_Crop.png",
+                             "_21May_Crop.png",
                              sep = ""),
             height = 20, width = 40, units = "cm", res = 72)
         plot(raster.list.crop[[i]], zlim = c(-.1,1.1))
@@ -1085,11 +1080,11 @@ for(k in c(1:5,9:12,8,7,6)) {
         #                   "_14Dec_Crop.tif",
         #                   sep = ""))
         # Pasture
-        png(filename = paste("Outputs/ConversionMaps_Jan/",
+        png(filename = paste("Outputs/LandForecastRuns/Diets/",
                              iso3c[c],
                              region.names[k],
                              names(raster.list.pasture)[i], 
-                             "_14Dec_Pasture.png",
+                             "_21May_Pasture.png",
                              sep = ""),
             height = 20, width = 40, units = "cm", res = 72)
         plot(raster.list.pasture[[i]], zlim = c(-.1,1.1))
