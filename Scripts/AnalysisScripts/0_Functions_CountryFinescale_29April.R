@@ -69,7 +69,31 @@ urb_conv_fun <- function(y){
 
 
 # Proportion of surrounding ag or pasture land ----
-adj.ag.f <- function(m, r, c, f, crop){
+convolution_fun <- function(m){
+  m_rows <- nrow(m)
+  m_cols <- ncol(m)
+  m_tmp <- rbind(matrix(0, nrow = 1, ncol = m_cols), m)[-(m_rows + 1),]
+  m_tmp <- m_tmp + 
+    rbind(matrix(0, nrow = 1, ncol = m_cols),
+          cbind(m, matrix(0, nrow = m_rows, ncol = 1))[,-1])[-(m_rows + 1),]
+  m_tmp <- m_tmp + 
+    cbind(m, matrix(0, nrow = m_rows, ncol = 1))[,-1]
+  m_tmp <- m_tmp + 
+    rbind(cbind(m, matrix(0, nrow = m_rows, ncol = 1))[,-1],
+          matrix(0, nrow = 1, ncol = m_cols))[-1,]
+  m_tmp <- m_tmp + 
+    rbind(m, matrix(0, nrow = 1, ncol = m_cols))[-1,]
+  m_tmp <- m_tmp + 
+    rbind(cbind(matrix(0, nrow = m_rows, ncol = 1), m)[,-(m_cols + 1)],
+          matrix(0, nrow = 1, ncol = m_cols))[-1,]
+  m_tmp <- m_tmp + cbind(matrix(0, nrow = m_rows, ncol = 1), m)[,-(m_cols + 1)]
+  m_tmp <- m_tmp + 
+    rbind(matrix(0, nrow = 1, ncol = m_cols),
+          cbind(matrix(0, nrow = m_rows, ncol = 1), m)[,-(m_cols + 1)])[-(m_rows + 1),]
+  return(m_tmp)
+}
+
+adj.ag.f <- function(m, r, c, crop){
   if(crop == "crop"){
     # Convert the column to a matrix
     tmp_mat <- matrix(m$prop_to_predict_from_crop, 
@@ -79,15 +103,9 @@ adj.ag.f <- function(m, r, c, f, crop){
     # Replace NAs with 0s to allow convolution
     tmp_mat[is.na(tmp_mat)] <- 0
     # Run the convolution
-    trans_mat <- filter2(tmp_mat, 
-                         adj_cell_mat, 
-                         boundary = 0)
-    # Take off the value of the focal cell
-    trans_mat <- trans_mat - tmp_mat
-    # Need to round numbers as convolution isn't precise
-    trans_mat <- round(trans_mat, digits = 8)
+    tmp_mat <- convolution_fun(tmp_mat)
     # Put data in and put NAs back where they should be
-    m$prop_adj_to_predict_from_crop <- as.vector(trans_mat)
+    m$prop_adj_to_predict_from_crop <- as.vector(tmp_mat)
     m[is.na(m$prop_to_predict_from_crop), "prop_adj_to_predict_from_crop"] <- NA
     return(m)
   } else {
@@ -99,19 +117,58 @@ adj.ag.f <- function(m, r, c, f, crop){
     # Replace NAs with 0s to allow convolution
     tmp_mat[is.na(tmp_mat)] <- 0
     # Run the convolution
-    trans_mat <- filter2(tmp_mat, 
-                         adj_cell_mat, 
-                         boundary = 0)
-    # Take off the value of the focal cell
-    trans_mat <- trans_mat - tmp_mat
-    # Need to round numbers as convolution isn't precise
-    trans_mat <- round(trans_mat, digits = 8)
+    tmp_mat <- convolution_fun(tmp_mat)
     # Put data in and put NAs back where they should be
-    m$prop_adj_to_predict_from_pasture <- as.vector(trans_mat)
+    m$prop_adj_to_predict_from_pasture <- as.vector(tmp_mat)
     m[is.na(m$prop_to_predict_from_pasture), "prop_adj_to_predict_from_pasture"] <- NA
     return(m)
   }
 }
+
+# Old version ----
+# adj.ag.f <- function(m, r, c, f, crop){
+#   if(crop == "crop"){
+#     # Convert the column to a matrix
+#     tmp_mat <- matrix(m$prop_to_predict_from_crop, 
+#                       nrow = r, 
+#                       ncol = c, 
+#                       byrow = FALSE)
+#     # Replace NAs with 0s to allow convolution
+#     tmp_mat[is.na(tmp_mat)] <- 0
+#     # Run the convolution
+#     trans_mat <- filter2(tmp_mat, 
+#                          adj_cell_mat, 
+#                          boundary = 0)
+#     # Take off the value of the focal cell
+#     trans_mat <- trans_mat - tmp_mat
+#     # Need to round numbers as convolution isn't precise
+#     trans_mat <- round(trans_mat, digits = 8)
+#     # Put data in and put NAs back where they should be
+#     m$prop_adj_to_predict_from_crop <- as.vector(trans_mat)
+#     m[is.na(m$prop_to_predict_from_crop), "prop_adj_to_predict_from_crop"] <- NA
+#     return(m)
+#   } else {
+#     # Convert the column to a matrix
+#     tmp_mat <- matrix(m$prop_to_predict_from_pasture, 
+#                       nrow = r, 
+#                       ncol = c, 
+#                       byrow = FALSE)
+#     # Replace NAs with 0s to allow convolution
+#     tmp_mat[is.na(tmp_mat)] <- 0
+#     # Run the convolution
+#     trans_mat <- filter2(tmp_mat, 
+#                          adj_cell_mat, 
+#                          boundary = 0)
+#     # Take off the value of the focal cell
+#     trans_mat <- trans_mat - tmp_mat
+#     # Need to round numbers as convolution isn't precise
+#     trans_mat <- round(trans_mat, digits = 8)
+#     # Put data in and put NAs back where they should be
+#     m$prop_adj_to_predict_from_pasture <- as.vector(trans_mat)
+#     m[is.na(m$prop_to_predict_from_pasture), "prop_adj_to_predict_from_pasture"] <- NA
+#     return(m)
+#   }
+# }
 
 
 # Predicting probabilites and amount of conversion ----
@@ -980,13 +1037,13 @@ year_fun <- function(x){
     mod_df <- adj.ag.f(m = mod_df,
                        r = rows,
                        c = cols,
-                       f = adj_cell_mat,
+                       # f = adj_cell_mat,
                        crop = "crop")  %>%
       as.data.frame()
     mod_df <- adj.ag.f(m = mod_df,
                        r = rows,
                        c = cols,
-                       f = adj_cell_mat,
+                       # f = adj_cell_mat,
                        crop = "pasture")  %>%
       as.data.frame()
     
